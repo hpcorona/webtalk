@@ -1,4 +1,4 @@
 {
 	"Private": "localhost:12344",
-	"Public": "localhost:12345"
+	"Public": "0.0.0.0:12345"
 }
