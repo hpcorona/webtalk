@@ -22,6 +22,7 @@ func RunCommand(c *net.TCPConn, frame *Frame) {
 			idx := strings.Index(frame.data, "!")
 			if idx < 0 {
 				respond(c, "error", "User separator not found (!)")
+				return
 			}
 			
 			uidstr := frame.data[0:idx]
@@ -39,6 +40,7 @@ func RunCommand(c *net.TCPConn, frame *Frame) {
 			idx := strings.Index(frame.data, "!")
 			if idx < 0 {
 				respond(c, "error", "Channel/User separator not found (!)")
+				return
 			}
 		
 			cidstr := frame.data[0:idx]
@@ -62,6 +64,7 @@ func RunCommand(c *net.TCPConn, frame *Frame) {
 			idx := strings.Index(frame.data, "!")
 			if idx < 0 {
 				respond(c, "error", "Channel/User separator not found (!)")
+				return
 			}
 	
 			cidstr := frame.data[0:idx]
@@ -95,6 +98,7 @@ func RunCommand(c *net.TCPConn, frame *Frame) {
 			idx := strings.Index(frame.data, "!")
 			if idx < 0 {
 				respond(c, "error", "Channel separator not found (!)")
+				return
 			}
 		
 			cidstr := frame.data[0:idx]
@@ -108,6 +112,27 @@ func RunCommand(c *net.TCPConn, frame *Frame) {
 		
 			SendToChannel(id, msg)
 			respond(c, "ok", "message sent")
+		case "store":
+			idx := strings.Index(frame.data, "!")
+			if idx < 0 {
+				respond(c, "error", "Data separator not found (!)")
+				return
+			}
+	
+			key := frame.data[0:idx]
+			value := frame.data[idx+1:]
+			
+			Store(key, value)
+			
+			respond(c, "ok", "stored " + key)
+		case "clear":
+			Clear(frame.data)
+			
+			respond(c, "ok", "cleared " + frame.data)
+		case "retrieve":
+			val := Retrieve(frame.data)
+			
+			respond(c, "ok", val)
 		default:
 			respond(c, "error", "Invalid command: " + frame.command)
 	}

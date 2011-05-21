@@ -17,6 +17,17 @@ const (
 	second int64 = 1000000000
 )
 
+func IsClosed(ws *websocket.Conn) bool {
+	var ibuff [50]byte
+	
+	_, err := ws.Read(ibuff[0:50])
+	if err != nil {
+		return true
+	}
+
+	return false
+}
+
 func indexHandler(ws *websocket.Conn) {
 	var ibuff [50]byte
 	
@@ -29,7 +40,7 @@ func indexHandler(ws *websocket.Conn) {
 	msg := string(ibuff[0:i])	
 	idx := strings.Index(msg, "!")
 	if idx < 0 {
-		fmt.Printf("Salt not found")
+		fmt.Printf("Salt not found\n")
 		return
 	}
 	
@@ -38,7 +49,7 @@ func indexHandler(ws *websocket.Conn) {
 	
 	uid, err := strconv.Atoui64(idstr)
 	if err != nil {
-		fmt.Printf("User ID invalid")
+		fmt.Printf("User ID invalid\n")
 		return
 	}
 	
@@ -46,12 +57,16 @@ func indexHandler(ws *websocket.Conn) {
 	
 	usr := LinkUser(uid, salt, ws)
 	if usr == nil {
-		fmt.Printf("Cannot link with User ID")
+		fmt.Printf("Cannot link with User ID\n")
 		return
 	}
 	
 	for usr.exit == false {
 		time.Sleep(1e8)
+
+		if IsClosed(ws) {
+			break
+		}
 	}
 }
 

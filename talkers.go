@@ -19,6 +19,7 @@ type TalkChannel []uint64
 
 var talkUsers = map[uint64] *TalkUser {}
 var talkChannels = map[uint64] TalkChannel {}
+var globalStore = map[string] string {}
 var currentUserIdx uint64 = 0
 var currentChannelIdx uint64 = 0
 
@@ -56,22 +57,7 @@ func JoinChannel(id uint64, uid uint64) {
 		return
 	}
 
-/*
-	needSort := false
-	if len(ch) > 0 {
-		if uid < ch[len(ch) - 1] {
-			needSort = true
-		}
-	}
-*/
-	
 	newCh := append(ch, uid)
-
-/*	
-	if (needSort) {
-		sort.Sort(newCh)
-	}
-*/
 
 	talkChannels[id] = newCh
 }
@@ -149,6 +135,8 @@ func LinkUser(id uint64, salt string, ws *websocket.Conn) (*TalkUser) {
 	if usr == nil {
 		return nil
 	}
+	
+	UnlinkUser(id, usr.ws)
 
 	if usr.ws == nil && usr.salt == salt {
 		usr.ws = ws
@@ -165,18 +153,29 @@ func UnlinkUser(id uint64, ws *websocket.Conn) {
 	}
 
 	if usr.ws == ws {
+		if usr.ws != nil {
+			usr.ws.Close()
+		}
 		usr.ws = nil
 	}
 }
 
 func UserSocket(usr *TalkUser) {
 	for usr.exit == false {
+		if usr.ws == nil {
+			time.Sleep(1e8)
+			continue
+		}
+		
 		select {
 			case <-usr.t:
 				continue
 			case m := <-usr.c:
 				if usr.ws != nil {
-					usr.ws.Write([]byte(m))
+					_, err := usr.ws.Write([]byte(m))
+					if err != nil {
+						usr.ws = nil
+					}
 				}
 		}
 	}
@@ -184,7 +183,19 @@ func UserSocket(usr *TalkUser) {
 
 func UserTimeout(usr *TalkUser) {
 	for usr.exit == false {
-		time.Sleep(1e9)
+		time.Sleep(1e8)
 		usr.t <- false
 	}
+}
+
+func Store(key, value string) {
+	globalStore[key] = value
+}
+
+func Clear(key string) {
+	globalStore[key] = "", false
+}
+
+func Retrieve(key string) string {
+	return globalStore[key]
 }
